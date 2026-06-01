@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MilanShare - Suki dilarang masuk</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        secondary: '#475569',
+                        lightBg: '#f8fafc',
+                        darkBg: '#0f172a',
+                        darkCard: '#1e293b',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .card-shadow {
+                box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            }
+            .dark .card-shadow {
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            }
+            .drag-over {
+                border-color: #2563eb !important;
+                background-color: rgba(37, 99, 235, 0.05) !important;
+            }
+            .link-format {
+                font-family: 'Courier New', monospace;
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-lightBg dark:bg-darkBg text-gray-900 dark:text-gray-100 min-h-screen transition-colors duration-300">
+    <!-- Navbar -->
+    <nav class="bg-white dark:bg-darkCard shadow-sm py-4">
+        <div class="container mx-auto px-4 flex justify-between items-center">
+            <h1 class="text-xl font-bold text-primary"><i class="fa fa-cloud-upload mr-2"></i>FileShare</h1>
+            <button id="themeToggle" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                <i class="fa fa-moon-o dark:hidden text-xl"></i>
+                <i class="fa fa-sun-o hidden dark:inline text-xl text-yellow-400"></i>
+            </button>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-10">
+        <!-- Halaman Upload -->
+        <div id="uploadPage" class="max-w-2xl mx-auto">
+            <div class="bg-white dark:bg-darkCard rounded-2xl p-8 card-shadow">
+                <h2 class="text-2xl font-bold text-center mb-2">Unggah File Anda</h2>
+                <p class="text-gray-500 dark:text-gray-400 text-center mb-8">Dapatkan tautan berformat domain lengkap, seperti MediaFire</p>
+
+                <!-- Area Drop & Pilih File -->
+                <div id="dropArea" class="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-10 text-center cursor-pointer transition-all hover:border-primary">
+                    <input type="file" id="fileInput" class="hidden">
+                    <i class="fa fa-cloud-upload text-6xl text-gray-400 mb-4"></i>
+                    <p class="text-lg mb-2">Seret file ke sini atau <span class="text-primary font-medium">klik untuk memilih</span></p>
+                    <p class="text-sm text-gray-500">Ukuran maksimal: 2GB per file | Format tautan: https://namafile.fileshare.id</p>
+                </div>
+
+                <!-- Info File Terpilih -->
+                <div id="fileInfo" class="mt-6 hidden">
+                    <h4 class="font-medium mb-3">File Terpilih:</h4>
+                    <div id="fileItem" class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-xl mb-4">
+                        <div class="flex items-center gap-3">
+                            <i class="fa fa-file-o text-primary text-2xl"></i>
+                            <div>
+                                <p id="selectedFileName" class="font-medium text-lg"></p>
+                                <p id="selectedFileSize" class="text-sm text-gray-500"></p>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="uploadBtn" class="w-full bg-primary hover:bg-blue-700 text-white py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2">
+                        <i class="fa fa-upload"></i> Buat Tautan Unduhan
+                    </button>
+                </div>
+
+                <!-- Proses Upload -->
+                <div id="uploadProgress" class="mt-6 hidden">
+                    <h4 class="font-medium mb-3">Memproses file...</h4>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-2">
+                        <div id="progressBar" class="bg-primary h-3 rounded-full w-0 transition-all duration-300"></div>
+                    </div>
+                    <p id="progressText" class="text-sm text-gray-500 text-right">Menyiapkan tautan...</p>
+                </div>
+
+                <!-- Hasil Tautan -->
+                <div id="resultArea" class="mt-6 hidden">
+                    <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6">
+                        <h4 class="font-medium text-green-700 dark:text-green-400 mb-3 flex items-center gap-2">
+                            <i class="fa fa-check-circle"></i> Tautan Berhasil Dibuat!
+                        </h4>
+                        
+                        <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">Tautan unduhan lengkap:</p>
+                        <div class="flex gap-2 mb-2">
+                            <input type="text" id="downloadLink" readonly class="link-format flex-1 p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-base font-medium text-primary" placeholder="https://...">
+                            <button id="copyBtn" class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-5 rounded-lg transition-colors">
+                                <i class="fa fa-copy text-lg"></i>
+                            </button>
+                        </div>
+                        
+                        <p class="text-xs text-gray-500 mt-3">✅ Tautan ini aktif dan bisa dibagikan ke siapa saja</p>
+                        
+                        <div class="flex gap-3 mt-4">
+                            <a href="#" id="openLinkBtn" target="_blank" class="flex-1 bg-primary hover:bg-blue-700 text-center text-white py-2 rounded-lg transition-colors">
+                                <i class="fa fa-external-link mr-1"></i> Buka Tautan
+                            </a>
+                            <button id="newUploadBtn" class="flex-1 border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 py-2 rounded-lg transition-colors">
+                                Unggah Lagi
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Halaman Unduh -->
+        <div id="downloadPage" class="max-w-xl mx-auto hidden">
+            <div class="bg-white dark:bg-darkCard rounded-2xl p-8 card-shadow text-center">
+                <i class="fa fa-file-o text-8xl text-primary mb-6"></i>
+                <h2 class="text-2xl font-bold mb-2">File Siap Diunduh</h2>
+                <p id="fileNameDisplay" class="text-xl font-medium text-gray-700 dark:text-gray-200 mb-2"></p>
+                <p id="fileSizeDisplay" class="text-gray-500 mb-6"></p>
+
+                <button id="downloadBtn" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-semibold text-lg transition-all transform hover:scale-[1.02] flex items-center justify-center gap-3">
+                    <i class="fa fa-download text-xl"></i> Unduh File Sekarang
+                </button>
+
+                <p class="text-xs text-gray-500 mt-8">File disimpan aman. Unduhan dimulai otomatis saat tombol diklik.</p>
+                <a href="index.html" class="inline-block mt-4 text-primary hover:underline">← Unggah file lain</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === PENGATURAN DOMAIN ===
+        const DOMAIN = "fileshare.id"; // Kamu bisa ganti sesuka hati: contohnya: mediafireku.com, berkas.id, dll
+        // ========================
+
+        // Cek mode halaman berdasarkan URL
+        const currentPath = window.location.hostname;
+        const urlParts = window.location.hostname.split('.');
+        
+        // Jika bukan domain utama, asumsikan ini halaman unduh
+        if(urlParts.length > 2 && urlParts[urlParts.length-2] + '.' + urlParts[urlParts.length-1] === DOMAIN) {
+            showDownloadPage();
+        }
+
+        // Tema Gelap/Terang
+        const themeToggle = document.getElementById('themeToggle');
+        const html = document.documentElement;
+
+        if(localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            html.classList.add('dark');
+        }
+
+        themeToggle.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+        });
+
+        // Elemen Halaman Upload
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const selectedFileNameEl = document.getElementById('selectedFileName');
+        const selectedFileSizeEl = document.getElementById('selectedFileSize');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const uploadProgress = document.getElementById('uploadProgress');
+        const progressBar = document.getElementById('progressBar');
+        const resultArea = document.getElementById('resultArea');
+        const downloadLinkInput = document.getElementById('downloadLink');
+        const copyBtn = document.getElementById('copyBtn');
+        const openLinkBtn = document.getElementById('openLinkBtn');
+        const newUploadBtn = document.getElementById('newUploadBtn');
+
+        let selectedFile = null;
+        let fileDataStore = {};
+
+        // Pilih file
+        dropArea.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', handleFileSelect);
+
+        // Seret & lepas
+        ['dragenter', 'dragover'].forEach(evt => dropArea.addEventListener(evt, e => {e.preventDefault(); dropArea.classList.add('drag-over')}));
+        ['dragleave', 'drop'].forEach(evt => dropArea.addEventListener(evt, e => {e.preventDefault(); dropArea.classList.remove('drag-over')}));
+        dropArea.addEventListener('drop', e => handleFileSelect({target:{files:e.dataTransfer.files}}));
+
+        function handleFileSelect(e) {
+            if(!e.target.files || e.target.files.length === 0) return;
+            selectedFile = e.target.files[0];
+            
+            selectedFileNameEl.textContent = selectedFile.name;
+            selectedFileSizeEl.textContent = `Ukuran: ${formatFileSize(selectedFile.size)}`;
+            
+            fileInfo.classList.remove('hidden');
+            resultArea.classList.add('hidden');
+        }
+
+        // Format ukuran file
+        function formatFileSize(bytes) {
+            if(bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Buat nama domain yang aman
+        function createSafeFileName(name) {
+            return name.toLowerCase()
+                       .replace(/[^a-z0-9]/g, '-') // ganti karakter aneh jadi strip
+                       .replace(/-+/g, '-') // hapus strip ganda
+                       .replace(/^-|-$/g, '') + '-' + Math.random().toString(36).substr(2,4); // tambahkan kode acak agar unik
+        }
+
+        // Proses upload & buat tautan
+        uploadBtn.addEventListener('click', () => {
+            if(!selectedFile) return;
+
+            uploadProgress.classList.remove('hidden');
+            fileInfo.classList.add('hidden');
+
+            // Simulasi proses
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 10;
+                progressBar.style.width = `${progress}%`;
+                
+                if(progress >= 100) {
+                    clearInterval(interval);
+                    
+                    // Buat nama file aman dan tautan
+                    const safeName = createSafeFileName(selectedFile.name);
+                    const fullLink = `https://${safeName}.${DOMAIN}`;
+                    
+                    // Simpan data file sementara
+                    const fileUrl = URL.createObjectURL(selectedFile);
+                    fileDataStore[safeName] = {
+                        name: selectedFile.name,
+                        size: selectedFile.size,
+                        url: fileUrl
+                    };
+                    localStorage.setItem('fileshare_data', JSON.stringify(fileDataStore));
+
+                    // Tampilkan hasil
+                    downloadLinkInput.value = fullLink;
+                    openLinkBtn.href = fullLink;
+                    
+                    uploadProgress.classList.add('hidden');
+                    resultArea.classList.remove('hidden');
+                }
+            }, 120);
+        });
+
+        // Salin tautan
+        copyBtn.addEventListener('click', () => {
+            downloadLinkInput.select();
+            navigator.clipboard.writeText(downloadLinkInput.value).then(() => {
+                const original = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<i class="fa fa-check text-green-500"></i>';
+                setTimeout(() => copyBtn.innerHTML = original, 1800);
+            });
+        });
+
+        // Upload baru
+        newUploadBtn.addEventListener('click', () => {
+            fileInput.value = '';
+            selectedFile = null;
+            fileInfo.classList.add('hidden');
+            resultArea.classList.add('hidden');
+        });
+
+        // Tampilkan halaman unduh
+        function showDownloadPage() {
+            document.getElementById('uploadPage').classList.add('hidden');
+            document.getElementById('downloadPage').classList.remove('hidden');
+
+            const subdomain = urlParts[0];
+            const savedData = JSON.parse(localStorage.getItem('fileshare_data') || '{}');
+            const fileInfo = savedData[subdomain];
+
+            if(!fileInfo) {
+                document.getElementById('downloadPage').innerHTML = `
+                    <div class="text-center py-12">
+                        <i class="fa fa-exclamation-triangle text-red-500 text-8xl mb-6"></i>
+                        <h2 class="text-2xl font-bold mb-3">File Tidak Ditemukan</h2>
+                        <p class="text-gray-600 dark:text-gray-300 mb-6">Tautan ini tidak valid atau file sudah dihapus.</p>
+                        <a href="index.html" class="inline-block bg-primary text-white px-8 py-3 rounded-lg hover:bg-blue-700">
+                            Kembali ke Beranda
+                        </a>
+                    </div>
+                `;
+                return;
+            }
+
+            document.getElementById('fileNameDisplay').textContent = fileInfo.name;
+            document.getElementById('fileSizeDisplay').textContent = `Ukuran: ${formatFileSize(fileInfo.size)}`;
+            
+            document.getElementById('downloadBtn').addEventListener('click', () => {
+                const a = document.createElement('a');
+                a.href = fileInfo.url;
+                a.download = fileInfo.name;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            });
+        }
+    </script>
+</body>
+</html>
