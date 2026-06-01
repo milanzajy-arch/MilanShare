@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Berbagi File Publik</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        danger: '#dc2626',
+                        lightBg: '#f8fafc',
+                        darkBg: '#0f172a',
+                        darkCard: '#1e293b',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .card-shadow {
+                box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+            }
+            .dark .card-shadow {
+                box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+            }
+            .drag-over {
+                border-color: #2563eb !important;
+                background-color: rgba(37, 99, 235, 0.05) !important;
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-lightBg dark:bg-darkBg text-gray-900 dark:text-gray-100 min-h-screen transition-colors duration-300">
+    <!-- Navbar -->
+    <nav class="bg-white dark:bg-darkCard shadow-sm py-4 mb-6">
+        <div class="container mx-auto px-4 flex justify-between items-center">
+            <h1 class="text-xl font-bold text-primary flex items-center gap-2">
+                <i class="fa fa-folder-open"></i> Berbagi File Publik
+            </h1>
+            <button id="themeToggle" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                <i class="fa fa-moon-o dark:hidden text-xl"></i>
+                <i class="fa fa-sun-o hidden dark:inline text-xl text-yellow-400"></i>
+            </button>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 max-w-4xl">
+        <!-- Form Upload -->
+        <div class="bg-white dark:bg-darkCard rounded-2xl p-6 mb-8 card-shadow">
+            <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+                <i class="fa fa-upload text-primary"></i> Unggah File Baru
+            </h2>
+
+            <form id="uploadForm" class="space-y-4">
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block mb-2 font-medium">Nama Pembuat</label>
+                        <input type="text" id="creatorName" required placeholder="Contoh: Budi Santoso" 
+                            class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary">
+                    </div>
+                    <div>
+                        <label class="block mb-2 font-medium">Nama File</label>
+                        <input type="text" id="fileName" required placeholder="Contoh: Laporan Keuangan 2026.pdf" 
+                            class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block mb-2 font-medium">Deskripsi</label>
+                    <textarea id="fileDesc" rows="2" placeholder="Jelaskan isi atau kegunaan file..." 
+                        class="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary resize-none"></textarea>
+                </div>
+
+                <div>
+                    <label class="block mb-2 font-medium">Pilih File</label>
+                    <div id="dropArea" class="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-6 text-center cursor-pointer transition-all hover:border-primary">
+                        <input type="file" id="fileInput" required class="hidden">
+                        <i class="fa fa-cloud-upload text-4xl text-gray-400 mb-2"></i>
+                        <p class="mb-1">Seret file ke sini atau <span class="text-primary font-medium">klik untuk memilih</span></p>
+                        <p class="text-sm text-gray-500" id="selectedFileText">Belum ada file dipilih</p>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-primary hover:bg-blue-700 text-white py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2">
+                    <i class="fa fa-check-circle"></i> Unggah & Tampilkan ke Publik
+                </button>
+            </form>
+        </div>
+
+        <!-- Daftar File Publik -->
+        <div class="bg-white dark:bg-darkCard rounded-2xl p-6 card-shadow">
+            <h2 class="text-xl font-bold mb-2 flex items-center gap-2">
+                <i class="fa fa-list text-primary"></i> Daftar File Publik
+            </h2>
+            <p class="text-sm text-gray-500 mb-6">Semua file di bawah ini dapat dilihat dan diunduh oleh siapa saja</p>
+
+            <div id="fileListContainer" class="space-y-5">
+                <p id="emptyState" class="text-center text-gray-500 py-10">Belum ada file yang diunggah. Jadilah yang pertama membagikan file!</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tema Gelap/Terang
+        const themeToggle = document.getElementById('themeToggle');
+        const html = document.documentElement;
+
+        if(localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            html.classList.add('dark');
+        }
+
+        themeToggle.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+        });
+
+        // Elemen Utama
+        const uploadForm = document.getElementById('uploadForm');
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('fileInput');
+        const selectedFileText = document.getElementById('selectedFileText');
+        const fileListContainer = document.getElementById('fileListContainer');
+        const emptyState = document.getElementById('emptyState');
+
+        let selectedFile = null;
+
+        // Pilih File
+        dropArea.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', handleFileSelect);
+
+        ['dragenter', 'dragover'].forEach(evt => dropArea.addEventListener(evt, e => {e.preventDefault(); dropArea.classList.add('drag-over')}));
+        ['dragleave', 'drop'].forEach(evt => dropArea.addEventListener(evt, e => {e.preventDefault(); dropArea.classList.remove('drag-over')}));
+        dropArea.addEventListener('drop', e => handleFileSelect({target:{files:e.dataTransfer.files}}));
+
+        function handleFileSelect(e) {
+            if(!e.target.files || e.target.files.length === 0) return;
+            selectedFile = e.target.files[0];
+            selectedFileText.textContent = `${selectedFile.name} (${formatFileSize(selectedFile.size)})`;
+        }
+
+        // Format Ukuran File
+        function formatFileSize(bytes) {
+            if(bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Unggah & Simpan File
+        uploadForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            if(!selectedFile) {
+                alert('Silakan pilih file terlebih dahulu!');
+                return;
+            }
+
+            const fileData = {
+                id: Date.now(), // ID unik berdasarkan waktu
+                creator: document.getElementById('creatorName').value.trim(),
+                fileName: document.getElementById('fileName').value.trim(),
+                description: document.getElementById('fileDesc').value.trim() || 'Tidak ada deskripsi tambahan',
+                size: selectedFile.size,
+                fileUrl: URL.createObjectURL(selectedFile),
+                uploadDate: new Date().toLocaleString('id-ID', {
+                    day: 'numeric', month: 'long', year: 'numeric', 
+                    hour: '2-digit', minute: '2-digit'
+                })
+            };
+
+            // Simpan ke penyimpanan
+            let savedFiles = JSON.parse(localStorage.getItem('publicFiles') || '[]');
+            savedFiles.unshift(fileData); // Tambahkan di urutan teratas
+            localStorage.setItem('publicFiles', JSON.stringify(savedFiles));
+
+            // Reset Form
+            uploadForm.reset();
+            selectedFile = null;
+            selectedFileText.textContent = 'Belum ada file dipilih';
+
+            // Perbarui Tampilan
+            renderFileList();
+            alert('✅ File berhasil diunggah dan tersedia untuk umum!');
+        });
+
+        // Hapus File
+        function deleteFile(fileId) {
+            if(confirm('Apakah Anda yakin ingin menghapus file ini? Tindakan ini tidak dapat dibatalkan.')) {
+                let savedFiles = JSON.parse(localStorage.getItem('publicFiles') || '[]');
+                // Filter file yang tidak dihapus
+                savedFiles = savedFiles.filter(file => file.id !== parseInt(fileId));
+                localStorage.setItem('publicFiles', JSON.stringify(savedFiles));
+                
+                renderFileList();
+                alert('🗑️ File berhasil dihapus!');
+            }
+        }
+
+        // Unduh File
+        function downloadFile(url, filename) {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        // Tampilkan Semua File
+        function renderFileList() {
+            const savedFiles = JSON.parse(localStorage.getItem('publicFiles') || '[]');
+            fileListContainer.innerHTML = '';
+
+            if(savedFiles.length === 0) {
+                emptyState.style.display = 'block';
+                fileListContainer.appendChild(emptyState);
+                return;
+            }
+
+            emptyState.style.display = 'none';
+
+            savedFiles.forEach(file => {
+                const fileCard = document.createElement('div');
+                fileCard.className = 'border border-gray-200 dark:border-gray-700 rounded-xl p-5 hover:shadow-md transition-shadow';
+                fileCard.innerHTML = `
+                    <div class="flex flex-col md:flex-row gap-4 justify-between">
+                        <div class="flex gap-4">
+                            <div class="text-primary text-4xl mt-1">
+                                <i class="fa fa-file-o"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-xl font-semibold mb-1">${file.fileName}</h3>
+                                <p class="text-sm text-gray-500 mb-2">
+                                    Oleh: <span class="font-medium">${file.creator}</span> • 
+                                    Ukuran: ${formatFileSize(file.size)} • 
+                                    Diunggah: ${file.uploadDate}
+                                </p>
+                                <p class="text-gray-700 dark:text-gray-300">${file.description}</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 self-start">
+                            <button onclick="downloadFile('${file.fileUrl}', '${file.fileName.replace(/'/g, "\\'")}')" 
+                                class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg flex items-center gap-2 transition-colors">
+                                <i class="fa fa-download"></i> Unduh
+                            </button>
+                            <button onclick="deleteFile(${file.id})" 
+                                class="bg-danger hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+                                <i class="fa fa-trash"></i> Hapus
+                            </button>
+                        </div>
+                    </div>
+                `;
+                fileListContainer.appendChild(fileCard);
+            });
+        }
+
+        // Muat file saat halaman dibuka
+        window.addEventListener('load', renderFileList);
+    </script>
+</body>
+</html>
